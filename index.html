@@ -113,6 +113,14 @@
       background: #ffffff;
     }
 
+    /* Day Checkbox Custom Toggle */
+    .day-checkbox:checked + .day-label {
+      background-color: #10b981;
+      color: #020617;
+      border-color: #34d399;
+      font-weight: 700;
+    }
+
     /* Glowing Card Indicators */
     .glow-amber { filter: drop-shadow(0 0 14px rgba(245, 158, 11, 0.8)); }
     .glow-emerald { filter: drop-shadow(0 0 14px rgba(16, 185, 129, 0.8)); }
@@ -150,12 +158,17 @@
         </div>
       </div>
 
-      <!-- Real-Time Clock Badge -->
+      <!-- Real-Time Clock Badge & Control Actions -->
       <div class="flex items-center gap-3 ml-auto sm:ml-0">
         <div class="glass-card px-4 py-2 rounded-2xl text-right border border-slate-700/60">
           <div id="realTimeClock" class="font-mono text-base sm:text-lg font-bold text-slate-100 tracking-wider">00:00:00 AM</div>
           <div id="realTimeDate" class="text-[10px] uppercase font-semibold text-slate-400">Loading Date...</div>
         </div>
+
+        <!-- Schedule Manager Button -->
+        <button onclick="toggleScheduleModal()" class="w-11 h-11 rounded-2xl glass-card hover:bg-slate-800 border border-slate-700/70 text-emerald-400 flex items-center justify-center text-lg transition-all active:scale-95" title="Open Multi-Schedule Timers">
+          <i class="fa-solid fa-calendar-days"></i>
+        </button>
 
         <!-- Audio Toggle Button -->
         <button id="audioToggleBtn" onclick="toggleAudio()" class="w-11 h-11 rounded-2xl glass-card hover:bg-slate-800 border border-slate-700/70 text-emerald-400 flex items-center justify-center text-lg transition-all active:scale-95" title="Toggle Sound Chimes">
@@ -177,7 +190,7 @@
         </div>
         <div>
           <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Active Light Relays</h2>
-        
+          <p id="atmosphereLabel" class="text-[11px] text-slate-400">Atmosphere: Natural Canopy</p>
         </div>
       </div>
 
@@ -201,8 +214,7 @@
             <i class="fa-solid fa-sun"></i>
           </div>
           <div class="min-w-0">
-            <h3 class="font-bold text-slate-100 font-outfit text-base truncate">Light 1 </h3>
-          
+            <h3 class="font-bold text-slate-100 font-outfit text-base truncate">Light 1</h3>
           </div>
         </div>
 
@@ -221,8 +233,7 @@
             <i class="fa-solid fa-feather"></i>
           </div>
           <div class="min-w-0">
-            <h3 class="font-bold text-slate-100 font-outfit text-base truncate">Light 2 </h3>
-            
+            <h3 class="font-bold text-slate-100 font-outfit text-base truncate">Light 2</h3>
           </div>
         </div>
 
@@ -241,8 +252,7 @@
             <i class="fa-solid fa-utensils"></i>
           </div>
           <div class="min-w-0">
-            <h3 class="font-bold text-slate-100 font-outfit text-base truncate">Light 3 </h3>
-           
+            <h3 class="font-bold text-slate-100 font-outfit text-base truncate">Light 3</h3>
           </div>
         </div>
 
@@ -262,7 +272,6 @@
           </div>
           <div class="min-w-0">
             <h3 class="font-bold text-slate-100 font-outfit text-base truncate">Light 4</h3>
-            
           </div>
         </div>
 
@@ -286,6 +295,7 @@
 
   </div>
 
+  <!-- Cloud Broker Config Modal -->
   <div id="configModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="glass-panel max-w-sm w-full p-6 rounded-3xl border border-slate-700/80 shadow-2xl">
       <h3 class="text-base font-bold text-slate-100 mb-1 flex items-center gap-2 font-outfit">
@@ -317,11 +327,169 @@
     </div>
   </div>
 
+  <!-- Unlimited Multi-Schedule Timers Modal -->
+  <div id="scheduleModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-lg w-full p-6 rounded-3xl border border-slate-700/80 shadow-2xl max-h-[90vh] flex flex-col">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-700/60 mb-4">
+        <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2 font-outfit">
+          <i class="fa-solid fa-clock text-emerald-400"></i> Multiple Automation Schedules
+        </h3>
+        <button onclick="toggleScheduleModal()" class="text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="overflow-y-auto space-y-5 pr-1 flex-1">
+        <!-- New Schedule Form -->
+        <div class="glass-card p-4 rounded-2xl border border-slate-700/70 space-y-4">
+          <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Create New Timer Task</h4>
+          
+          <!-- Select Time -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">1. Set Execution Time</label>
+            <input type="time" id="schedTime" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-emerald-500 text-sm">
+          </div>
+
+          <!-- Select Days (Week Starts Saturday: Sat-Fri) -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">2. Select Repeat Days (Saturday Start)</label>
+            <div class="grid grid-cols-7 gap-1">
+              <div>
+                <input type="checkbox" id="day-6" value="6" class="sr-only day-checkbox">
+                <label for="day-6" class="day-label border border-slate-700 rounded-lg p-2 text-center text-xs text-slate-400 cursor-pointer block hover:bg-slate-800 transition-all">Sat</label>
+              </div>
+              <div>
+                <input type="checkbox" id="day-0" value="0" class="sr-only day-checkbox">
+                <label for="day-0" class="day-label border border-slate-700 rounded-lg p-2 text-center text-xs text-slate-400 cursor-pointer block hover:bg-slate-800 transition-all">Sun</label>
+              </div>
+              <div>
+                <input type="checkbox" id="day-1" value="1" class="sr-only day-checkbox">
+                <label for="day-1" class="day-label border border-slate-700 rounded-lg p-2 text-center text-xs text-slate-400 cursor-pointer block hover:bg-slate-800 transition-all">Mon</label>
+              </div>
+              <div>
+                <input type="checkbox" id="day-2" value="2" class="sr-only day-checkbox">
+                <label for="day-2" class="day-label border border-slate-700 rounded-lg p-2 text-center text-xs text-slate-400 cursor-pointer block hover:bg-slate-800 transition-all">Tue</label>
+              </div>
+              <div>
+                <input type="checkbox" id="day-3" value="3" class="sr-only day-checkbox">
+                <label for="day-3" class="day-label border border-slate-700 rounded-lg p-2 text-center text-xs text-slate-400 cursor-pointer block hover:bg-slate-800 transition-all">Wed</label>
+              </div>
+              <div>
+                <input type="checkbox" id="day-4" value="4" class="sr-only day-checkbox">
+                <label for="day-4" class="day-label border border-slate-700 rounded-lg p-2 text-center text-xs text-slate-400 cursor-pointer block hover:bg-slate-800 transition-all">Thu</label>
+              </div>
+              <div>
+                <input type="checkbox" id="day-5" value="5" class="sr-only day-checkbox">
+                <label for="day-5" class="day-label border border-slate-700 rounded-lg p-2 text-center text-xs text-slate-400 cursor-pointer block hover:bg-slate-800 transition-all">Fri</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Target Output & Action -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">3. Select Target Outputs & Action</label>
+            <div class="flex items-center gap-3 mb-2">
+              <select id="schedAction" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-200 focus:outline-none focus:border-emerald-500">
+                <option value="ON">TURN ON</option>
+                <option value="OFF">TURN OFF</option>
+              </select>
+              <span class="text-xs text-slate-400">selected lights below:</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <label class="flex items-center gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800 cursor-pointer">
+                <input type="checkbox" value="1" class="sched-relay-cb accent-emerald-500"> Light 1
+              </label>
+              <label class="flex items-center gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800 cursor-pointer">
+                <input type="checkbox" value="2" class="sched-relay-cb accent-emerald-500"> Light 2
+              </label>
+              <label class="flex items-center gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800 cursor-pointer">
+                <input type="checkbox" value="3" class="sched-relay-cb accent-emerald-500"> Light 3
+              </label>
+              <label class="flex items-center gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800 cursor-pointer">
+                <input type="checkbox" value="4" class="sched-relay-cb accent-emerald-500"> Light 4
+              </label>
+            </div>
+          </div>
+
+          <button onclick="saveNewSchedule()" class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-plus"></i> Save Automation Schedule
+          </button>
+        </div>
+
+        <!-- Configured Schedules List -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Active Configured Schedules</h4>
+          <div id="schedulesList" class="space-y-2">
+            <!-- Schedule Items Will Be Rendered Dynamically Here -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <script>
     let isLiveTimeSynced = true;
     let manualTimeHours = 12.0;
     let audioCtx = null;
     let isAudioEnabled = true;
+
+    // Default Code-Embedded Schedules (Days: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat)
+    const defaultSchedules = [
+      {
+        id: 1001,
+        time: "06:00",
+        days: [6, 0, 1, 2, 3, 4, 5], // Sat to Fri (All week)
+        relays: [1, 2],
+        action: "ON",
+        enabled: true
+      },
+      {
+        id: 1002,
+        time: "18:30",
+        days: [6, 0, 1, 2, 3, 4, 5],
+        relays: [1, 2, 3],
+        action: "OFF",
+        enabled: true
+      },
+      {
+        id: 1003,
+        time: "19:00",
+        days: [6, 0, 1, 2, 3, 4, 5],
+        relays: [4],
+        action: "ON",
+        enabled: true
+      }
+    ];
+
+    // Load schedule list from localStorage or fallback to default JavaScript code array
+    let scheduleList = [];
+    const savedSchedules = localStorage.getItem('bird_home_schedules');
+    if (savedSchedules) {
+      try {
+        scheduleList = JSON.parse(savedSchedules);
+      } catch (e) {
+        scheduleList = [...defaultSchedules];
+      }
+    } else {
+      scheduleList = [...defaultSchedules];
+      localStorage.setItem('bird_home_schedules', JSON.stringify(scheduleList));
+    }
+
+    let lastExecutedMinute = "";
+
+    const dayNamesSatStart = {
+      6: "Sat",
+      0: "Sun",
+      1: "Mon",
+      2: "Tue",
+      3: "Wed",
+      4: "Thu",
+      5: "Fri"
+    };
 
     function updateRealTimeClock() {
       const now = new Date();
@@ -339,6 +507,9 @@
 
       const effectiveHours = isLiveTimeSynced ? (hours + now.getMinutes() / 60) : manualTimeHours;
       updateAtmospherePhase(effectiveHours);
+
+      // Trigger Scheduler Check
+      checkAutomationSchedules(now);
     }
 
     function updateAtmospherePhase(decimalHours) {
@@ -677,6 +848,147 @@
       initMQTT();
     }
 
+    /* Multi-Schedule Automation Functions */
+    function toggleScheduleModal() {
+      document.getElementById('scheduleModal').classList.toggle('hidden');
+      renderSchedulesList();
+    }
+
+    function saveNewSchedule() {
+      const timeVal = document.getElementById('schedTime').value;
+      if (!timeVal) {
+        alert("Please select a valid execution time.");
+        return;
+      }
+
+      // Collect selected days (0=Sun, 1=Mon, ..., 6=Sat)
+      const selectedDays = [];
+      [6, 0, 1, 2, 3, 4, 5].forEach(dayIdx => {
+        const cb = document.getElementById(`day-${dayIdx}`);
+        if (cb && cb.checked) selectedDays.push(dayIdx);
+      });
+
+      if (selectedDays.length === 0) {
+        alert("Please select at least one day for the schedule.");
+        return;
+      }
+
+      // Collect selected outputs
+      const selectedRelays = [];
+      document.querySelectorAll('.sched-relay-cb:checked').forEach(cb => {
+        selectedRelays.push(Number(cb.value));
+      });
+
+      if (selectedRelays.length === 0) {
+        alert("Please select at least one target light output.");
+        return;
+      }
+
+      const action = document.getElementById('schedAction').value;
+
+      const newSched = {
+        id: Date.now(),
+        time: timeVal,
+        days: selectedDays,
+        relays: selectedRelays,
+        action: action,
+        enabled: true
+      };
+
+      scheduleList.push(newSched);
+      localStorage.setItem('bird_home_schedules', JSON.stringify(scheduleList));
+
+      // Reset Form Checkboxes
+      document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
+      document.querySelectorAll('.sched-relay-cb').forEach(cb => cb.checked = false);
+      document.getElementById('schedTime').value = '';
+
+      renderSchedulesList();
+      updateLog(`[Schedule Created] Automation set for ${timeVal}`);
+    }
+
+    function deleteSchedule(id) {
+      scheduleList = scheduleList.filter(s => s.id !== id);
+      localStorage.setItem('bird_home_schedules', JSON.stringify(scheduleList));
+      renderSchedulesList();
+    }
+
+    function toggleScheduleStatus(id) {
+      const item = scheduleList.find(s => s.id === id);
+      if (item) {
+        item.enabled = !item.enabled;
+        localStorage.setItem('bird_home_schedules', JSON.stringify(scheduleList));
+        renderSchedulesList();
+      }
+    }
+
+    function renderSchedulesList() {
+      const container = document.getElementById('schedulesList');
+      if (!container) return;
+
+      if (scheduleList.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-500 italic p-3 text-center border border-dashed border-slate-800 rounded-xl">No active schedules saved yet. Create one above!</div>`;
+        return;
+      }
+
+      container.innerHTML = scheduleList.map(item => {
+        // Render days in Sat-Fri sequence
+        const daysFormatted = [6, 0, 1, 2, 3, 4, 5]
+          .filter(d => item.days.includes(d))
+          .map(d => dayNamesSatStart[d])
+          .join(', ');
+
+        const relaysFormatted = item.relays.map(r => `L${r}`).join(', ');
+        const isTurnOn = item.action === 'ON';
+
+        return `
+          <div class="glass-card p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-3 ${!item.enabled ? 'opacity-40' : ''}">
+            <div class="space-y-0.5 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-sm font-bold ${isTurnOn ? 'text-emerald-400' : 'text-rose-400'}">${item.time}</span>
+                <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${isTurnOn ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${item.action}</span>
+                <span class="text-xs font-semibold text-slate-200">Outputs: [${relaysFormatted}]</span>
+              </div>
+              <div class="text-[11px] text-slate-400 truncate">Days: ${daysFormatted}</div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <button onclick="toggleScheduleStatus(${item.id})" class="text-xs px-2.5 py-1 rounded-lg ${item.enabled ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}">
+                ${item.enabled ? 'Active' : 'Paused'}
+              </button>
+              <button onclick="deleteSchedule(${item.id})" class="text-rose-400 hover:text-rose-300 p-1 text-sm">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function checkAutomationSchedules(now) {
+      const currentHours = now.getHours().toString().padStart(2, '0');
+      const currentMinutes = now.getMinutes().toString().padStart(2, '0');
+      const currentTimeStr = `${currentHours}:${currentMinutes}`;
+      const currentDay = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+
+      // Execute once per minute
+      if (lastExecutedMinute === currentTimeStr) return;
+      lastExecutedMinute = currentTimeStr;
+
+      scheduleList.forEach(sched => {
+        if (!sched.enabled) return;
+
+        if (sched.time === currentTimeStr && sched.days.includes(currentDay)) {
+          const turnOn = sched.action === 'ON';
+          updateLog(`[Schedule Triggered] Running task for ${currentTimeStr} (${sched.action})`);
+          
+          sched.relays.forEach(relayNum => {
+            publishRelayState(relayNum, turnOn);
+          });
+        }
+      });
+    }
+
     const canvas = document.getElementById('ambientCanvas');
     const ctx = canvas.getContext('2d');
 
@@ -722,6 +1034,7 @@
       updateRealTimeClock();
       setInterval(updateRealTimeClock, 1000);
       initMQTT();
+      renderSchedulesList();
     };
   </script>
 </body>
