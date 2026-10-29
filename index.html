@@ -4,395 +4,573 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bird Home Automation Dashboard</title>
-    <!-- MQTT Client Library -->
+    <!-- MQTT Paho Client -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #090d16, #111827);
-            color: #f8fafc;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        :root {
+            --bg-color: #080c14;
+            --card-bg: #0f172a;
+            --neon-green: #00ff88;
+            --neon-blue: #00f0ff;
+            --neon-red: #ff0055;
+            --text-color: #f1f5f9;
         }
-        .header {
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 15px;
             display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
             justify-content: center;
         }
-        /* Bird Animation */
-        .bird-icon {
-            width: 45px;
-            height: 45px;
-            background: #38bdf8;
-            border-radius: 50%;
-            position: relative;
-            animation: floatBird 2s ease-in-out infinite;
-        }
-        .bird-icon::before {
-            content: "🐦";
-            font-size: 26px;
-            position: absolute;
-            top: 6px;
-            left: 8px;
-        }
-        @keyframes floatBird {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-6px); }
-        }
-        .status-badge, .clock-badge {
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .online { background: #22c55e; color: white; box-shadow: 0 0 10px #22c55e; }
-        .offline { background: #ef4444; color: white; box-shadow: 0 0 10px #ef4444; }
-        .clock-badge { background: #1e293b; border: 1px solid #334155; color: #38bdf8; }
 
         .container {
             width: 100%;
             max-width: 500px;
         }
-        .card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            padding: 20px;
+
+        /* Header & Digital Clock */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 15px 20px;
             border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            border: 1px solid #1e293b;
             margin-bottom: 20px;
-        }
-        h2 { color: #38bdf8; font-size: 18px; margin-top: 0; display: flex; justify-content: space-between; align-items: center; }
-        
-        /* Neon Manual Control Buttons */
-        .relay-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-        .neon-btn {
-            background: #0f172a;
-            border: 2px solid #ef4444;
-            color: #ef4444;
-            padding: 12px;
-            font-size: 15px;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: 0.3s;
-            box-shadow: 0 0 5px rgba(239, 68, 68, 0.2);
-        }
-        .neon-btn.active {
-            background: #22c55e;
-            border-color: #22c55e;
-            color: white;
-            box-shadow: 0 0 15px #22c55e, inset 0 0 5px rgba(255,255,255,0.5);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
         }
 
-        /* Form elements */
-        .form-group { margin-bottom: 12px; }
-        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: #cbd5e1; }
-        input[type="time"], select {
-            width: 100%;
-            padding: 10px;
-            background: #0f172a;
-            border: 1px solid #475569;
-            color: white;
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 15px;
-        }
-        .checkbox-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-top: 5px;
-        }
-        .checkbox-grid label {
+        .header h2 {
+            font-size: 18px;
+            color: var(--neon-blue);
             display: flex;
             align-items: center;
             gap: 8px;
-            background: #0f172a;
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid #475569;
-            cursor: pointer;
-            font-size: 13px;
         }
-        .btn {
-            background: #10b981;
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 12px;
-            font-size: 15px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .btn:hover { background: #059669; }
 
-        /* Schedule List View */
+        .clock-box {
+            text-align: right;
+        }
+
+        #digitalClock {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--neon-green);
+            text-shadow: 0 0 8px var(--neon-green);
+        }
+
+        /* Status Indicator */
+        .status-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--neon-red);
+            box-shadow: 0 0 8px var(--neon-red);
+        }
+
+        .status-dot.online {
+            background: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
+        }
+
+        /* Section Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #1e293b;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        /* Neon Relay Buttons */
+        .relay-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .relay-btn {
+            background: #1e293b;
+            border: 2px solid #334155;
+            padding: 20px 10px;
+            border-radius: 14px;
+            color: #64748b;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .relay-btn i {
+            font-size: 24px;
+        }
+
+        /* Active Neon Effect */
+        .relay-btn.active {
+            color: #fff;
+            border-color: var(--neon-green);
+            background: rgba(0, 255, 136, 0.05);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.4), inset 0 0 10px rgba(0, 255, 136, 0.2);
+            text-shadow: 0 0 8px var(--neon-green);
+        }
+
+        .relay-btn.active i {
+            color: var(--neon-green);
+            filter: drop-shadow(0 0 6px var(--neon-green));
+        }
+
+        /* Floating Add Button (+ Icon) */
+        .add-btn {
+            background: var(--neon-blue);
+            color: #000;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-blue);
+            transition: transform 0.2s;
+        }
+
+        .add-btn:active {
+            transform: scale(0.9);
+        }
+
+        /* Schedule Item Cards */
+        .schedule-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
         .schedule-item {
-            background: #0f172a;
-            border: 1px solid #334155;
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 10px;
+            background: #1e293b;
+            border-left: 4px solid var(--neon-blue);
+            padding: 12px 15px;
+            border-radius: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .schedule-info b { color: #38bdf8; font-size: 16px; }
-        .schedule-actions button {
-            background: none;
-            border: none;
+
+        .sched-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sched-time {
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .sched-details {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .sched-actions i {
+            margin-left: 10px;
             cursor: pointer;
             font-size: 16px;
-            margin-left: 5px;
+            transition: color 0.2s;
         }
-        .add-toggle-btn {
-            background: #0ea5e9;
-            color: white;
-            border: none;
-            padding: 6px 12px;
+
+        .sched-actions .fa-edit { color: var(--neon-blue); }
+        .sched-actions .fa-trash { color: var(--neon-red); }
+
+        /* Modal / Popup Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--neon-blue);
+            padding: 25px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+
+        .modal-title {
+            color: var(--neon-blue);
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #fff;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #1e293b;
+            padding: 8px;
             border-radius: 6px;
             cursor: pointer;
+        }
+
+        .modal-btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-submit {
+            background: var(--neon-green);
+            color: #000;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
             font-weight: bold;
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: #334155;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            flex: 1;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="bird-icon"></div>
-        <h1>Bird Home Dashboard</h1>
-        <div id="statusBadge" class="status-badge offline">Connecting...</div>
-        <div id="liveClock" class="clock-badge">--:--:--</div>
-    </div>
-
     <div class="container">
-        <!-- Manual Control Card with Neon Animation -->
-        <div class="card">
-            <h2>Manual Relay Control</h2>
-            <div class="relay-grid" style="margin-top: 15px;">
-                <button class="neon-btn" id="rBtn1" onclick="toggleRelay(1)">Light 1: OFF</button>
-                <button class="neon-btn" id="rBtn2" onclick="toggleRelay(2)">Light 2: OFF</button>
-                <button class="neon-btn" id="rBtn3" onclick="toggleRelay(3)">Light 3: OFF</button>
-                <button class="neon-btn" id="rBtn4" onclick="toggleRelay(4)">Light 4: OFF</button>
+        <!-- Header -->
+        <div class="header">
+            <h2><i class="fa-solid fa-feather-pointed"></i> Bird Home</h2>
+            <div class="clock-box">
+                <div id="digitalClock">00:00:00</div>
+                <div class="status-container">
+                    <div id="statusDot" class="status-dot"></div>
+                    <span id="statusText" style="color: #94a3b8;">Connecting...</span>
+                </div>
             </div>
         </div>
 
-        <!-- Automation Schedules Card -->
+        <!-- Manual Controls Section -->
         <div class="card">
-            <h2>
-                Automation Schedules 
-                <button class="add-toggle-btn" onclick="toggleForm()">+ Add New</button>
-            </h2>
-
-            <!-- Hidden Form to Create Schedule -->
-            <div id="scheduleForm" style="display: none; margin-top: 15px; border-top: 1px solid #334155; padding-top: 15px;">
-                <div class="form-group">
-                    <label>Execution Time</label>
-                    <input type="time" id="execTime" value="06:00">
-                </div>
-
-                <div class="form-group">
-                    <label>Action</label>
-                    <select id="actionType">
-                        <option value="ON">TURN ON</option>
-                        <option value="OFF">TURN OFF</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Target Outputs</label>
-                    <div class="checkbox-grid">
-                        <label><input type="checkbox" class="light-chk" value="1"> Light 1</label>
-                        <label><input type="checkbox" class="light-chk" value="2"> Light 2</label>
-                        <label><input type="checkbox" class="light-chk" value="3"> Light 3</label>
-                        <label><input type="checkbox" class="light-chk" value="4"> Light 4</label>
-                    </div>
-                </div>
-
-                <button class="btn" onclick="saveSchedule()">Save Automation Schedule</button>
+            <div class="card-header">
+                <span class="card-title">Manual Relay Switches</span>
             </div>
+            <div class="relay-grid">
+                <button class="relay-btn" id="btnR1" onclick="toggleRelay(1)">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    Light 1
+                </button>
+                <button class="relay-btn" id="btnR2" onclick="toggleRelay(2)">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    Light 2
+                </button>
+                <button class="relay-btn" id="btnR3" onclick="toggleRelay(3)">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    Light 3
+                </button>
+                <button class="relay-btn" id="btnR4" onclick="toggleRelay(4)">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    Light 4
+                </button>
+            </div>
+        </div>
 
-            <!-- List View of Schedules -->
-            <div id="scheduleList" style="margin-top: 15px;">
-                <!-- Dynamically populated items will go here -->
+        <!-- Automation Schedules Section -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Automation Schedules</span>
+                <button class="add-btn" onclick="openModal()"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div class="schedule-list" id="scheduleList">
+                <!-- Schedules will appear here dynamically -->
             </div>
         </div>
     </div>
 
-    <!-- Click Audio Effect -->
+    <!-- Create/Edit Schedule Modal -->
+    <div class="modal" id="scheduleModal">
+        <div class="modal-content">
+            <h3 class="modal-title" id="modalHeading">New Schedule Task</h3>
+            
+            <div class="form-group">
+                <label>Set Time</label>
+                <input type="time" id="timePicker" value="06:00">
+            </div>
+
+            <div class="form-group">
+                <label>Action</label>
+                <select id="actionPicker">
+                    <option value="ON">TURN ON</option>
+                    <option value="OFF">TURN OFF</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Target Lights</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="chkL1"> Light 1</label>
+                    <label><input type="checkbox" id="chkL2"> Light 2</label>
+                    <label><input type="checkbox" id="chkL3"> Light 3</label>
+                    <label><input type="checkbox" id="chkL4"> Light 4</label>
+                </div>
+            </div>
+
+            <div class="modal-btn-group">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="saveSchedule()">Save Task</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Effect -->
     <audio id="clickSound" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
 
     <script>
-        let client = new Paho.MQTT.Client("broker.hivemq.com", Number(8000), "web_client_" + parseInt(Math.random() * 100, 10));
-        let schedules = [];
+        // MQTT Setup
+        let client = new Paho.MQTT.Client("broker.hivemq.com", Number(8000), "web_client_" + parseInt(Math.random() * 1000, 10));
+
         let relayStates = [false, false, false, false];
+        let schedules = [];
+        let editingIndex = -1;
 
-        function playSound() {
-            document.getElementById("clickSound").currentTime = 0;
-            document.getElementById("clickSound").play().catch(e => {});
+        // Realtime Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById("digitalClock").innerText = now.toLocaleTimeString();
         }
+        setInterval(updateClock, 1000);
+        updateClock();
 
-        // Live Realtime Clock
-        setInterval(() => {
-            let now = new Date();
-            document.getElementById("liveClock").innerText = now.toLocaleTimeString();
-        }, 1000);
-
-        client.onConnectionLost = function (responseObject) {
-            document.getElementById("statusBadge").innerText = "Offline";
-            document.getElementById("statusBadge").className = "status-badge offline";
-            setTimeout(connectMQTT, 4000);
+        // MQTT Connection
+        client.onConnectionLost = function() {
+            document.getElementById("statusDot").className = "status-dot";
+            document.getElementById("statusText").innerText = "Offline";
+            setTimeout(connectMQTT, 3000);
         };
 
-        client.onMessageArrived = function (message) {
-            let topic = message.destinationName;
-            let payload = message.payloadString;
-
-            // Handle manual status feedback from ESP32
-            if(topic.startsWith("arpit_home/relay")) {
-                let rNum = parseInt(topic.charAt(topic.length - 1));
-                let state = (payload === "1");
-                relayStates[rNum - 1] = state;
-                updateButtonUI(rNum, state);
+        client.onMessageArrived = function(message) {
+            console.log("Message Arrived: " + message.destinationName + " -> " + message.payloadString);
+            
+            // Sync Status
+            if (message.destinationName === "arpit_home/status") {
+                if (message.payloadString === "online") {
+                    document.getElementById("statusDot").className = "status-dot online";
+                    document.getElementById("statusText").innerText = "Device Online";
+                }
             }
         };
 
         function connectMQTT() {
-            client.connect({ onSuccess: onConnect, onFailure: onFailure, useSSL: false });
+            client.connect({
+                onSuccess: function() {
+                    document.getElementById("statusDot").className = "status-dot online";
+                    document.getElementById("statusText").innerText = "Connected";
+                    client.subscribe("arpit_home/status");
+                },
+                onFailure: function() {
+                    document.getElementById("statusDot").className = "status-dot";
+                    document.getElementById("statusText").innerText = "Offline";
+                    setTimeout(connectMQTT, 3000);
+                }
+            });
         }
-
-        function onConnect() {
-            document.getElementById("statusBadge").innerText = "Online (WiFi)";
-            document.getElementById("statusBadge").className = "status-badge online";
-            client.subscribe("arpit_home/status");
-            client.subscribe("arpit_home/relay1");
-            client.subscribe("arpit_home/relay2");
-            client.subscribe("arpit_home/relay3");
-            client.subscribe("arpit_home/relay4");
-        }
-
-        function onFailure(message) {
-            document.getElementById("statusBadge").innerText = "Offline";
-            document.getElementById("statusBadge").className = "status-badge offline";
-            setTimeout(connectMQTT, 4000);
-        }
-
         connectMQTT();
 
-        // Toggle Form Visibility
-        function toggleForm() {
-            playSound();
-            let form = document.getElementById("scheduleForm");
-            form.style.display = form.style.display === "none" ? "block" : "none";
-        }
-
-        // Manual Relay Toggle with Neon Effect
-        function toggleRelay(rNum) {
-            playSound();
-            let currentState = relayStates[rNum - 1];
-            let newState = !currentState;
+        // Manual Relay Control
+        function toggleRelay(num) {
+            document.getElementById("clickSound").play();
+            relayStates[num - 1] = !relayStates[num - 1];
             
-            if (client.isConnected()) {
-                let message = new Paho.MQTT.Message(newState ? "1" : "0");
-                message.destinationName = "arpit_home/relay" + rNum;
-                client.send(message);
-            }
-        }
-
-        function updateButtonUI(rNum, state) {
-            let btn = document.getElementById("rBtn" + rNum);
-            if (state) {
-                btn.className = "neon-btn active";
-                btn.innerText = "Light " + rNum + ": ON";
+            let btn = document.getElementById("btnR" + num);
+            if (relayStates[num - 1]) {
+                btn.classList.add("active");
             } else {
-                btn.className = "neon-btn";
-                btn.innerText = "Light " + rNum + ": OFF";
+                btn.classList.remove("active");
+            }
+
+            if (client.isConnected()) {
+                let msg = new Paho.MQTT.Message(relayStates[num - 1] ? "1" : "0");
+                msg.destinationName = "arpit_home/relay" + num;
+                client.send(msg);
             }
         }
 
-        // Save Schedule & Push to List View
-        function saveSchedule() {
-            playSound();
-            let time = document.getElementById("execTime").value;
-            let action = document.getElementById("actionType").value;
-            
-            let selectedLights = [];
-            document.querySelectorAll(".light-chk:checked").forEach((cb) => {
-                selectedLights.push("L" + cb.value);
-            });
+        // Modal Controls
+        function openModal(editIdx = -1) {
+            editingIndex = editIdx;
+            document.getElementById("scheduleModal").style.display = "flex";
 
-            if(selectedLights.length === 0) {
-                alert("Please select at least one target output light!");
-                return;
+            if (editIdx >= 0) {
+                document.getElementById("modalHeading").innerText = "Edit Schedule Task";
+                let item = schedules[editIdx];
+                document.getElementById("timePicker").value = item.time;
+                document.getElementById("actionPicker").value = item.action;
+                document.getElementById("chkL1").checked = item.outputs[0];
+                document.getElementById("chkL2").checked = item.outputs[1];
+                document.getElementById("chkL3").checked = item.outputs[2];
+                document.getElementById("chkL4").checked = item.outputs[3];
+            } else {
+                document.getElementById("modalHeading").innerText = "New Schedule Task";
+                document.getElementById("timePicker").value = "06:00";
+                document.getElementById("chkL1").checked = false;
+                document.getElementById("chkL2").checked = false;
+                document.getElementById("chkL3").checked = false;
+                document.getElementById("chkL4").checked = false;
             }
+        }
 
-            let newSched = {
-                id: Date.now(),
-                time: time,
-                action: action,
-                outputs: selectedLights
-            };
+        function closeModal() {
+            document.getElementById("scheduleModal").style.display = "none";
+        }
 
-            schedules.push(newSched);
-            renderScheduleList();
-            toggleForm();
+        // Save Automation Schedule
+        function saveSchedule() {
+            document.getElementById("clickSound").play();
+
+            let time = document.getElementById("timePicker").value;
+            let action = document.getElementById("actionPicker").value;
+            let outputs = [
+                document.getElementById("chkL1").checked,
+                document.getElementById("chkL2").checked,
+                document.getElementById("chkL3").checked,
+                document.getElementById("chkL4").checked
+            ];
+
+            let scheduleObj = { time: time, action: action, outputs: outputs };
+
+            if (editingIndex >= 0) {
+                schedules[editingIndex] = scheduleObj;
+            } else {
+                schedules.push(scheduleObj);
+            }
 
             // Send to ESP32 via MQTT
             if (client.isConnected()) {
-                let message = new Paho.MQTT.Message(JSON.stringify(newSched));
-                message.destinationName = "arpit_home/add_schedule";
-                client.send(message);
+                let msg = new Paho.MQTT.Message(JSON.stringify(scheduleObj));
+                msg.destinationName = "arpit_home/add_schedule";
+                client.send(msg);
             }
+
+            renderSchedules();
+            closeModal();
         }
 
-        // Delete Schedule Item
-        function deleteSchedule(id) {
-            playSound();
-            schedules = schedules.filter(s => s.id !== id);
-            renderScheduleList();
-            // Optional: send delete command or update payload to ESP32
+        // Delete Schedule
+        function deleteSchedule(index) {
+            document.getElementById("clickSound").play();
+            schedules.splice(index, 1);
+            renderSchedules();
         }
 
-        // Render Schedule List View
-        function renderScheduleList() {
-            let listDiv = document.getElementById("scheduleList");
-            listDiv.innerHTML = "";
+        // Render Schedule List UI
+        function renderSchedules() {
+            let listContainer = document.getElementById("scheduleList");
+            listContainer.innerHTML = "";
 
-            if(schedules.length === 0) {
-                listDiv.innerHTML = "<p style='text-align:center; color:#64748b; font-size:13px;'>No active automation tasks.</p>";
+            if (schedules.length === 0) {
+                listContainer.innerHTML = `<p style="text-align:center; color:#64748b; font-size:13px;">No active automation tasks.</p>`;
                 return;
             }
 
-            schedules.forEach(s => {
-                let item = document.createElement("div");
-                item.className = "schedule-item";
-                item.innerHTML = `
-                    <div class="schedule-info">
-                        <b>${s.time}</b> [${s.action}]<br>
-                        <span style="font-size:12px; color:#94a3b8;">Outputs: [${s.outputs.join(", ")}]</span>
-                    </div>
-                    <div class="schedule-actions">
-                        <button onclick="deleteSchedule(${s.id})" title="Delete">🗑️</button>
+            schedules.forEach((item, index) => {
+                let lightsText = [];
+                if (item.outputs[0]) lightsText.push("L1");
+                if (item.outputs[1]) lightsText.push("L2");
+                if (item.outputs[2]) lightsText.push("L3");
+                if (item.outputs[3]) lightsText.push("L4");
+
+                let itemHTML = `
+                    <div class="schedule-item">
+                        <div class="sched-info">
+                            <span class="sched-time">${item.time} <small style="color:${item.action === 'ON' ? '#00ff88' : '#ff0055'}; font-size:12px;">[${item.action}]</small></span>
+                            <span class="sched-details">Outputs: [${lightsText.join(", ")}]</span>
+                        </div>
+                        <div class="sched-actions">
+                            <i class="fa-solid fa-pen-to-square" onclick="openModal(${index})"></i>
+                            <i class="fa-solid fa-trash" onclick="deleteSchedule(${index})"></i>
+                        </div>
                     </div>
                 `;
-                listDiv.appendChild(item);
+                listContainer.innerHTML += itemHTML;
             });
         }
 
-        // Initialize empty list
-        renderScheduleList();
+        renderSchedules();
     </script>
 </body>
 </html>
